@@ -1,79 +1,61 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
 
-public class Driving : MonoBehaviour
+// Copied from https://answers.unity.com/questions/686025/top-down-2d-car-physics-1.html
+// Code by https://answers.unity.com/users/758056/ijidau.html
+public class Driving: MonoBehaviour {
+
+
+     public float acceleration;
+public float steering;
+private Rigidbody2D rb;
+
+void Start()
 {
-    Rigidbody2D rb2D;
-
-    float speed;
-    float brakeForce;
-    float maxSpeed;
-    float turnSpeed;
-    float currentAngle;
-    Quaternion currentRotation;
-
-    [SerializeField] GameObject carBody;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        rb2D = gameObject.GetComponent<Rigidbody2D>();
-        speed = 1.0f;
-        maxSpeed = 80f;
-        brakeForce = 3f;
-        turnSpeed = 1f;
-        currentAngle = 0f;
-        currentRotation = carBody.transform.rotation;
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        currentRotation = carBody.transform.rotation;
-        ChangeDirectionAndSpeed();
-        Debug.Log(speed);
-        MoveCar();
-    }
-
-    void ChangeDirectionAndSpeed()
-    {
-        // Input.GetKey remains true while held down
-        // Accerlating function
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            if (speed < maxSpeed)
-            {
-                speed += 1;
-            }
-            if (speed >= maxSpeed)
-            {
-                Debug.Log("Max Speed is reached. Current Speed: " + speed);
-                return;
-            }
-        }
-        // Braking function
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            if (speed > 0)
-            {
-                speed -= brakeForce;
-            }
-            if (speed < 0)
-            {
-                speed = 0;
-            }
-        }
-        // Next couple turn the car
-        if (Input.GetKeyDown(KeyCode.W))
-        {
-            currentAngle = turnSpeed * Time.deltaTime;
-            carBody.transform.rotation *= Quaternion.AngleAxis(currentAngle, Vector2.up);
-        }
-    }
-
-    void MoveCar()
-    {
-        transform.position = new Vector3(speed * Time.deltaTime, speed * Time.deltaTime, 0);
-    }
+    rb = GetComponent<Rigidbody2D>();
 }
+
+void FixedUpdate()
+{
+    float h = -Input.GetAxis("Horizontal");
+    float v = Input.GetAxis("Vertical");
+
+    Vector2 speed = transform.up * (v * acceleration);
+    rb.AddForce(speed);
+
+    float direction = Vector2.Dot(rb.velocity, rb.GetRelativeVector(Vector2.up));
+    if (direction >= 0.0f)
+    {
+        rb.rotation += h * steering * (rb.velocity.magnitude / 5.0f);
+        //rb.AddTorque((h * steering) * (rb.velocity.magnitude / 10.0f));
+    }
+    else
+    {
+        rb.rotation -= h * steering * (rb.velocity.magnitude / 5.0f);
+        //rb.AddTorque((-h * steering) * (rb.velocity.magnitude / 10.0f));
+    }
+
+    Vector2 forward = new Vector2(0.0f, 0.5f);
+    float steeringRightAngle;
+    if (rb.angularVelocity > 0)
+    {
+        steeringRightAngle = -90;
+    }
+    else
+    {
+        steeringRightAngle = 90;
+    }
+
+    Vector2 rightAngleFromForward = Quaternion.AngleAxis(steeringRightAngle, Vector3.forward) * forward;
+    Debug.DrawLine((Vector3)rb.position, (Vector3)rb.GetRelativePoint(rightAngleFromForward), Color.green);
+
+    float driftForce = Vector2.Dot(rb.velocity, rb.GetRelativeVector(rightAngleFromForward.normalized));
+
+    Vector2 relativeForce = (rightAngleFromForward.normalized * -1.0f) * (driftForce * 10.0f);
+
+
+    Debug.DrawLine((Vector3)rb.position, (Vector3)rb.GetRelativePoint(relativeForce), Color.red);
+
+    rb.AddForce(rb.GetRelativeVector(relativeForce));
+}
+ }
