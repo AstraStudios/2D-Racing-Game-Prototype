@@ -6,8 +6,8 @@ using System.Collections;
 public class Driving: MonoBehaviour {
 
 
-     public float acceleration;
-public float steering;
+     public float acceleration = 5f;
+public float steering = 3f;
 private Rigidbody2D rb;
 
 void Start()
